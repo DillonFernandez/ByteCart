@@ -19,7 +19,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-## Key Features
+## Key Features (Mobile App)
 
 <table>
 <tr>
@@ -109,44 +109,6 @@ ByteCart/
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-Ensure you have the following installed:
-
-- **Flutter SDK** (latest stable)
-- **Android Studio** or **VS Code**
-- **Xcode** (macOS only, for iOS)
-- **XAMPP** (MySQL server)
-- **MongoDB** (database)
-
-### Quick Setup
-
-1. **Clone the repository**
-
-   ```bash
-   git clone [repository-url]
-   cd ByteCart
-   ```
-
-2. **Flutter Setup**
-
-   ```bash
-   cd bytecart_app
-   flutter pub get
-   flutter run
-   ```
-
-3. **Laravel Setup**
-   ```bash
-   cd web_platform
-   composer install
-   php artisan serve
-   ```
-
----
-
 ## Academic Objectives
 
 This project demonstrates proficiency in:
@@ -156,17 +118,6 @@ This project demonstrates proficiency in:
 - **Database Management** - MySQL and MongoDB integration
 - **Modern UI/UX Design** - Responsive and adaptive interfaces
 - **Device Integration** - Location services and sensor utilization
-- **Offline-first Architecture** - Robust connectivity handling
-
----
-
-## Screenshots
-
-<div align="center">
-  <img src="docs/screenshots/home.png" alt="Home Screen" width="200">
-  <img src="docs/screenshots/cart.png" alt="Shopping Cart" width="200">
-  <img src="docs/screenshots/profile.png" alt="User Profile" width="200">
-</div>
 
 ---
 
@@ -181,4 +132,15 @@ This project demonstrates proficiency in:
 <div align="center">
   <p><strong>Disclaimer</strong></p>
   <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
+</div>
+</div>
+**Email**: dillonfernandez@gmail.com  
+**Institution**: [University Name]
+
+---
+
+<div align="center">
+  <p><strong>Disclaimer</strong></p>
+  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
+</div>
 </div>
