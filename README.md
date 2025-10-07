@@ -11,7 +11,7 @@
 
 ---
 
-<h2>Overview</h2>
+<div style="font-size: 1.5em; font-weight: bold; margin-bottom: 16px;">Overview</div>
 
 ByteCart is a comprehensive e-commerce solution for electronics shopping, featuring cross-platform mobile applications and a robust web platform. Built with Flutter and Laravel, this project demonstrates modern development practices and intelligent user experience features.
 
@@ -19,13 +19,13 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-<h2>Key Features</h2>
+<div style="font-size: 1.5em; font-weight: bold; margin-bottom: 16px;">Key Features</div>
 
 <table>
 <tr>
 <td width="50%">
 
-<h3>Smart User Interface (Mobile App)</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">Smart User Interface (Mobile App)</div>
 
 - **Adaptive Theming** - Automatic light/dark mode switching
 - **Manual Theme Control** - User preference override
@@ -34,7 +34,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 </td>
 <td width="50%">
 
-<h3>Location Intelligence (Mobile App)</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">Location Intelligence (Mobile App)</div>
 
 - **Auto Location Detection** - Smart address completion
 - **Shipping Integration** - Automatic address filling
@@ -45,7 +45,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 <tr>
 <td width="50%">
 
-<h3>Connectivity Management (Mobile App)</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">Connectivity Management (Mobile App)</div>
 
 - **Real-time Status** - Online/offline indicators
 - **Smart Synchronization** - Automatic data sync
@@ -54,7 +54,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 </td>
 <td width="50%">
 
-<h3>E-commerce Core (App & Website)</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">E-commerce Core (App & Website)</div>
 
 - **Product Catalog** - Electronics inventory
 - **Shopping Cart** - Advanced cart management
@@ -67,9 +67,9 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-<h2>Technology Stack</h2>
+<div style="font-size: 1.5em; font-weight: bold; margin-bottom: 16px;">Technology Stack</div>
 
-<h3>Mobile Application</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">Mobile Application</div>
 
 ```
 Framework    Flutter
@@ -77,7 +77,7 @@ Language     Dart
 Platforms    iOS • Android
 ```
 
-<h3>Web Platform</h3>
+<div style="font-size: 1.17em; font-weight: bold; margin-bottom: 10px;">Web Platform</div>
 
 ```
 Backend      Laravel (PHP)
@@ -88,7 +88,7 @@ Server       XAMPP
 
 ---
 
-<h2>Academic Objectives</h2>
+<div style="font-size: 1.5em; font-weight: bold; margin-bottom: 16px;">Academic Objectives</div>
 
 This project demonstrates proficiency in:
 
@@ -100,7 +100,7 @@ This project demonstrates proficiency in:
 
 ---
 
-<h2>Contact Information</h2>
+<div style="font-size: 1.5em; font-weight: bold; margin-bottom: 16px;">Contact Information</div>
 
 **Developer**: Dillon Fernandez  
 **Email**: dillonfernandez@gmail.com  
