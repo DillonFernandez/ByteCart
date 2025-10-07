@@ -19,13 +19,13 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-## Key Features (Mobile App)
+## Key Features
 
 <table>
 <tr>
 <td width="50%">
 
-### Smart User Interface
+### Smart User Interface (Mobile App)
 
 - **Adaptive Theming** - Automatic light/dark mode switching
 - **Manual Theme Control** - User preference override
@@ -34,7 +34,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 </td>
 <td width="50%">
 
-### Location Intelligence
+### Location Intelligence (Mobile App)
 
 - **Auto Location Detection** - Smart address completion
 - **Shipping Integration** - Automatic address filling
@@ -45,7 +45,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 <tr>
 <td width="50%">
 
-### Connectivity Management
+### Connectivity Management (Mobile App)
 
 - **Real-time Status** - Online/offline indicators
 - **Smart Synchronization** - Automatic data sync
@@ -121,21 +121,8 @@ This project demonstrates proficiency in:
 <div align="center">
   <p><strong>Disclaimer</strong></p>
   <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
-</div>
-</div>
-  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
-</div>
-</div>
-</div>
-  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
-</div>
-</div>
+
 **Email**: dillonfernandez@gmail.com  
 **Institution**: APIIT
 
----
-
-<div align="center">
-  <p><strong>Disclaimer</strong></p>
-  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
 </div>
