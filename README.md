@@ -29,7 +29,6 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 - **Adaptive Theming** - Automatic light/dark mode switching
 - **Manual Theme Control** - User preference override
-- **Auto Brightness** - Intelligent screen adjustment
 - **Responsive Design** - Optimized for all screen sizes
 
 </td>
@@ -40,7 +39,6 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 - **Auto Location Detection** - Smart address completion
 - **Shipping Integration** - Automatic address filling
 - **Geolocation Services** - Enhanced user experience
-- **Address Validation** - Accurate delivery information
 
 </td>
 </tr>
@@ -50,14 +48,13 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 ### Connectivity Management
 
 - **Real-time Status** - Online/offline indicators
-- **Offline Mode** - Browse cached content
 - **Smart Synchronization** - Automatic data sync
 - **Connection Recovery** - Seamless reconnection
 
 </td>
 <td width="50%">
 
-### E-commerce Core
+### E-commerce Core (App & Website)
 
 - **Product Catalog** - Electronics inventory
 - **Shopping Cart** - Advanced cart management
@@ -78,7 +75,6 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 Framework    Flutter
 Language     Dart
 Platforms    iOS • Android
-Architecture MVVM Pattern
 ```
 
 ### Web Platform
@@ -88,23 +84,6 @@ Backend      Laravel (PHP)
 Frontend     Blade Templates
 Database     MySQL • MongoDB
 Server       XAMPP
-```
-
----
-
-## Project Structure
-
-```
-ByteCart/
-├── bytecart_app/          # Flutter mobile application
-│   ├── lib/               # Dart source code
-│   ├── assets/            # Images and resources
-│   └── android/ios/       # Platform-specific code
-├── web_platform/          # Laravel web application
-│   ├── app/               # Application logic
-│   ├── resources/         # Views and assets
-│   └── database/          # Migrations and seeds
-└── docs/                  # Documentation
 ```
 
 ---
@@ -143,4 +122,20 @@ This project demonstrates proficiency in:
   <p><strong>Disclaimer</strong></p>
   <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
 </div>
+</div>
+  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
+</div>
+</div>
+</div>
+  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
+</div>
+</div>
+**Email**: dillonfernandez@gmail.com  
+**Institution**: APIIT
+
+---
+
+<div align="center">
+  <p><strong>Disclaimer</strong></p>
+  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
 </div>
