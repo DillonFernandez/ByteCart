@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.webp" alt="ByteCart Logo" width="200" height="200">
+  <img src="./assets/images/logo.webp" alt="ByteCart Logo" width="200" height="200">
 </div>
 
 # ByteCart 🛒
@@ -61,55 +61,6 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 - XAMPP (for local MySQL server)
 - MongoDB
 
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <repository-url>
-   cd ByteCart
-   ```
-
-2. **Install Flutter dependencies**
-
-   ```bash
-   flutter pub get
-   ```
-
-3. **Set up the database**
-
-   - Start XAMPP and ensure MySQL is running
-   - Configure MongoDB connection
-   - Run database migrations (Laravel)
-
-4. **Configure environment**
-
-   - Update API endpoints in the Flutter app
-   - Set up Laravel environment variables
-
-5. **Run the application**
-
-   ```bash
-   # For mobile app
-   flutter run
-
-   # For web platform
-   # Navigate to Laravel directory and run
-   php artisan serve
-   ```
-
-## 📂 Project Structure
-
-```
-ByteCart/
-├── lib/                    # Flutter app source code
-├── android/               # Android-specific files
-├── ios/                   # iOS-specific files
-├── web-platform/          # Laravel web application
-├── assets/                # Images, fonts, and other assets
-└── README.md
-```
-
 ## 🎓 Academic Context
 
 This project is developed as a university assignment to demonstrate:
@@ -126,10 +77,6 @@ This project is developed as a university assignment to demonstrate:
 For questions or support regarding this project:
 
 - **Email**: dillonfernandez@gmail.com
-
-## 📄 License
-
-This project is developed for educational purposes as part of a university assignment.
 
 ---
 
