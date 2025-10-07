@@ -1,98 +1,210 @@
-// Login Page: email/password authentication with a segmented control to navigate to Register.
-// Responsive: fixed portrait baseline width (scaled down) and a centered landscape layout.
-// Shows themed SnackBars, supports Remember Me, and navigates to Home on success.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../services/api_service.dart';
 import '../theme/theme_colours.dart';
 import 'home.dart';
 import 'register.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginState {
+  final bool isLoading;
+  final bool isPasswordVisible;
+  final bool rememberMe;
+  final String? errorMessage;
+  final bool connectionError;
+  final String? successMessage;
+
+  LoginState({
+    this.isLoading = false,
+    this.isPasswordVisible = false,
+    this.rememberMe = false,
+    this.errorMessage,
+    this.connectionError = false,
+    this.successMessage,
+  });
+
+  LoginState copyWith({
+    bool? isLoading,
+    bool? isPasswordVisible,
+    bool? rememberMe,
+    String? errorMessage,
+    bool? connectionError,
+    String? successMessage,
+  }) {
+    return LoginState(
+      isLoading: isLoading ?? this.isLoading,
+      isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,
+      rememberMe: rememberMe ?? this.rememberMe,
+      errorMessage: errorMessage,
+      connectionError: connectionError ?? this.connectionError,
+      successMessage: successMessage,
+    );
+  }
+}
+
+class LoginNotifier extends StateNotifier<LoginState> {
+  LoginNotifier() : super(LoginState());
+
+  void togglePasswordVisibility() {
+    state = state.copyWith(isPasswordVisible: !state.isPasswordVisible);
+  }
+
+  void setRememberMe(bool value) {
+    state = state.copyWith(rememberMe: value);
+  }
+
+  void clearMessages() {
+    state = state.copyWith(
+      errorMessage: null,
+      successMessage: null,
+      connectionError: false,
+    );
+  }
+
+  Future<Map<String, dynamic>?> login({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      successMessage: null,
+      connectionError: false,
+    );
+    try {
+      final result = await ApiService.login(email: email, password: password);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: "Welcome back ${result['user']['name']}!",
+      );
+      return result;
+    } on ApiException catch (e) {
+      String msg;
+      if (e.message.toLowerCase().contains('network') ||
+          e.message.toLowerCase().contains('connection')) {
+        msg = "Connection error. Please check your internet and try again.";
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: msg,
+          connectionError: true,
+        );
+      } else {
+        msg = "Login failed. Please check your credentials and try again.";
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: msg,
+          connectionError: false,
+        );
+      }
+      return null;
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: "An unexpected error occurred. Please try again.",
+        connectionError: true,
+      );
+      return null;
+    }
+  }
+}
+
+final loginProvider = StateNotifierProvider<LoginNotifier, LoginState>(
+  (ref) => LoginNotifier(),
+);
+
+final selectedTabProvider = StateProvider<int>((ref) => 0);
+
+class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loginState = ref.watch(loginProvider);
+    final loginNotifier = ref.read(loginProvider.notifier);
+    final selectedTab = ref.watch(selectedTabProvider);
 
-class _LoginPageState extends State<LoginPage> {
-  // Form controllers and local UI state.
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
-  bool _isLoading = false;
-  bool _rememberMe = false;
-  int _selectedTab = 0; // 0 = Login, 1 = Register
+    final _formKey = GlobalKey<FormState>();
+    final _emailController = TextEditingController();
+    final _passwordController = TextEditingController();
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  // Perform login and handle success/error feedback and navigation.
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final result = await ApiService.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      setState(() => _isLoading = false);
-
-      // Show themed success message.
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: isDark ? Colors.white : Colors.black,
-          content: Text(
-            "Welcome back ${result['user']['name']}!",
-            style: TextStyle(color: isDark ? Colors.black : Colors.white),
-          ),
-        ),
-      );
-
-      // Navigate to Home and clear back stack.
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-        (route) => false,
-      );
-    } catch (e) {
-      setState(() => _isLoading = false);
-
-      // Show error message from API or exception.
-      final theme = Theme.of(context);
-      final msg = e is ApiException ? e.message : e.toString();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: theme.colorScheme.error,
-          content: Text(
-            msg,
-            style: TextStyle(color: theme.colorScheme.onError),
-          ),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Theme and layout constants.
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    const double designWidth =
-        412.0; // Portrait baseline width for consistent scaling.
+    const double designWidth = 412.0;
 
-    // CHANGED: wrap content with Theme to style cursor/selection/handles
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (loginState.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: isDark ? Colors.red[400] : Colors.red[100],
+            content: Row(
+              children: [
+                if (loginState.connectionError)
+                  Icon(
+                    Icons.wifi_off,
+                    color: isDark ? Colors.white : Colors.red,
+                    size: 22,
+                  ),
+                if (loginState.connectionError) const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    loginState.errorMessage!,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.red[900],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        loginNotifier.clearMessages();
+      } else if (loginState.successMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: isDark ? Colors.green[400] : Colors.green[100],
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: isDark ? Colors.white : Colors.green[900],
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    loginState.successMessage!,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.green[900],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        loginNotifier.clearMessages();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
+        );
+      }
+    });
+
+    Future<void> _refresh() async {
+      _emailController.clear();
+      _passwordController.clear();
+      loginNotifier.clearMessages();
+    }
+
     final content = Theme(
       data: theme.copyWith(
         textSelectionTheme: TextSelectionThemeData(
@@ -112,7 +224,6 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Title and subtitle.
                 Text(
                   'Welcome back to\nByteCart',
                   textAlign: TextAlign.left,
@@ -133,8 +244,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                // Segmented control: Login (active) / Register (navigates).
                 Container(
                   decoration: BoxDecoration(
                     color: isDark ? Colors.grey[800] : Colors.grey[100],
@@ -144,17 +253,20 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _selectedTab = 0),
+                          onTap:
+                              () =>
+                                  ref.read(selectedTabProvider.notifier).state =
+                                      0,
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color:
-                                  _selectedTab == 0
+                                  selectedTab == 0
                                       ? Colors.white
                                       : Colors.transparent,
                               borderRadius: BorderRadius.circular(25),
                               boxShadow:
-                                  _selectedTab == 0
+                                  selectedTab == 0
                                       ? [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.1),
@@ -169,7 +281,7 @@ class _LoginPageState extends State<LoginPage> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color:
-                                    _selectedTab == 0
+                                    selectedTab == 0
                                         ? Colors.black
                                         : colorScheme.onBackground.withOpacity(
                                           0.6,
@@ -184,6 +296,7 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
+                            ref.read(selectedTabProvider.notifier).state = 1;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -215,8 +328,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                // Email input.
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -256,24 +367,29 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your email address';
                     }
                     if (!RegExp(
                       r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                     ).hasMatch(value)) {
-                      return 'Please enter a valid email';
+                      return 'Please enter a valid email address';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
-
-                // Password input with visibility toggle.
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
+                  obscureText: !loginState.isPasswordVisible,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _handleLogin(),
+                  onFieldSubmitted: (_) async {
+                    if (_formKey.currentState!.validate()) {
+                      await loginNotifier.login(
+                        email: _emailController.text.trim(),
+                        password: _passwordController.text,
+                      );
+                    }
+                  },
                   style: TextStyle(color: colorScheme.onBackground),
                   decoration: InputDecoration(
                     hintText: 'Password',
@@ -286,15 +402,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible
+                        loginState.isPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
                         color: colorScheme.onBackground.withOpacity(0.5),
                       ),
                       onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
+                        loginNotifier.togglePasswordVisibility();
                       },
                     ),
                     filled: true,
@@ -331,24 +445,19 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 14),
-
-                // Remember me and forgot password actions.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
                         Checkbox(
-                          value: _rememberMe,
+                          value: loginState.rememberMe,
                           onChanged: (value) {
-                            setState(() {
-                              _rememberMe = value ?? false;
-                            });
+                            loginNotifier.setRememberMe(value ?? false);
                           },
                           activeColor: kMainColour,
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
-                          // CHANGED: rounded checkbox
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
@@ -362,9 +471,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {
-                        // Add forgot password flow here if implemented.
-                      },
+                      onPressed: () {},
                       style: TextButton.styleFrom(
                         foregroundColor: kMainColour,
                         padding: EdgeInsets.zero,
@@ -376,10 +483,18 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
                 const SizedBox(height: 20),
-
-                // Primary login button with loading state.
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
+                  onPressed:
+                      loginState.isLoading
+                          ? null
+                          : () async {
+                            if (_formKey.currentState!.validate()) {
+                              await loginNotifier.login(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text,
+                              );
+                            }
+                          },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kMainColour,
                     foregroundColor: Colors.white,
@@ -390,8 +505,8 @@ class _LoginPageState extends State<LoginPage> {
                     elevation: 0,
                   ),
                   child:
-                      _isLoading
-                          ? const SizedBox(
+                      loginState.isLoading
+                          ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
@@ -410,8 +525,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                 ),
                 const SizedBox(height: 24),
-
-                // Alternative auth divider text.
                 Row(
                   children: [
                     Expanded(
@@ -436,15 +549,11 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
                 const SizedBox(height: 18),
-
-                // Social login buttons (placeholders for providers).
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Google sign-in entry point (if implemented).
-                        },
+                        onPressed: () {},
                         icon: Image.asset(
                           isDark
                               ? 'assets/images/icons/google_d.webp'
@@ -468,9 +577,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Apple sign-in entry point (if implemented).
-                        },
+                        onPressed: () {},
                         icon: Image.asset(
                           isDark
                               ? 'assets/images/icons/apple_d.webp'
@@ -501,13 +608,10 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
 
-    // Orientation-specific scaffolds.
     if (MediaQuery.of(context).orientation == Orientation.portrait) {
-      // Portrait: fixed design width and scaled content for visual consistency.
       return Scaffold(
         backgroundColor: theme.colorScheme.background,
         appBar: AppBar(
-          // Keep app bar colors stable.
           backgroundColor: colorScheme.background,
           surfaceTintColor: Colors.transparent,
           scrolledUnderElevation: 0,
@@ -519,21 +623,25 @@ class _LoginPageState extends State<LoginPage> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: designWidth),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: designWidth,
-                    child: MediaQuery(
-                      // Lock text scaling for a consistent look.
-                      data: MediaQuery.of(
-                        context,
-                      ).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: content,
+              child: RefreshIndicator(
+                color: isDark ? Colors.white : Colors.black,
+                onRefresh: _refresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: designWidth,
+                      child: MediaQuery(
+                        data: MediaQuery.of(
+                          context,
+                        ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                        child: content,
+                      ),
                     ),
                   ),
                 ),
@@ -543,11 +651,9 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     } else {
-      // Landscape: centered, scrollable layout with a wider max width.
       return Scaffold(
         backgroundColor: theme.colorScheme.background,
         appBar: AppBar(
-          // Keep app bar colors stable.
           backgroundColor: colorScheme.background,
           surfaceTintColor: Colors.transparent,
           scrolledUnderElevation: 0,
@@ -558,16 +664,23 @@ class _LoginPageState extends State<LoginPage> {
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: content,
+              return RefreshIndicator(
+                color: isDark ? Colors.white : Colors.black,
+                onRefresh: _refresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: content,
+                      ),
                     ),
                   ),
                 ),

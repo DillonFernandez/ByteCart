@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/filter.dart';
 import '../models/product.dart';
@@ -11,6 +12,88 @@ import 'account.dart';
 import 'search.dart';
 import 'shop.dart' as shop;
 
+final productsProvider = FutureProvider<List<Product>>((ref) async {
+  return await ApiService.getProducts();
+});
+
+final discountedProductsProvider = FutureProvider<List<Product>>((ref) async {
+  final products = await ref.watch(productsProvider.future);
+  return products.where((p) => p.discount > 0).take(10).toList();
+});
+
+final newProductsProvider = FutureProvider<List<Product>>((ref) async {
+  final products = await ref.watch(productsProvider.future);
+  final newProducts =
+      products.where((p) => p.newStock).toList()..sort(
+        (a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+            .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
+      );
+  return newProducts.take(10).toList();
+});
+
+class _FriendlyErrorWidget extends ConsumerWidget {
+  final String message;
+  final IconData icon;
+  final VoidCallback? onRetry;
+
+  const _FriendlyErrorWidget({
+    required this.message,
+    required this.icon,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[900] : Colors.grey[50];
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final iconColor = isDark ? Colors.white : Colors.black;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 48, color: iconColor),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: Icon(Icons.refresh, color: iconColor),
+              label: Text('Retry', style: TextStyle(color: iconColor)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                foregroundColor: iconColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: onRetry,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -18,7 +101,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ByteCartShell(
       pages: [
-        HomeTab(key: const PageStorageKey('Home')),
+        const HomeTab(key: PageStorageKey('Home')),
         shop.ShopPage(key: const PageStorageKey('Shop')),
         SearchPage(key: const PageStorageKey('Search')),
         AccountPage(key: const PageStorageKey('Account')),
@@ -32,10 +115,15 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    if (isLandscape) {
+      return _buildLandscapeHome(context);
+    }
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // Header with search
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
@@ -64,7 +152,6 @@ class HomeTab extends StatelessWidget {
           ),
         ),
 
-        // Banners carousel
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -72,7 +159,6 @@ class HomeTab extends StatelessWidget {
           ),
         ),
 
-        // Section headers and content
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -115,9 +201,167 @@ class HomeTab extends StatelessWidget {
 
         const SliverToBoxAdapter(child: _NewProductsSection()),
 
-        // Bottom spacing
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
+    );
+  }
+
+  Widget _buildLandscapeHome(BuildContext context) {
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 1000;
+          final showTwoPane = constraints.maxWidth >= 820;
+          if (!showTwoPane) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildLandscapeLeftPane(context),
+                  const SizedBox(height: 24),
+                  _buildLandscapeRightPane(context),
+                ],
+              ),
+            );
+          }
+
+          final leftFlex = isWide ? 9 : 8;
+          final rightFlex = isWide ? 11 : 10;
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: leftFlex,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: _buildLandscapeLeftPane(context),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: rightFlex,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: _buildLandscapeRightPane(context),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLandscapeLeftPane(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.grey[50],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi there! 👋',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w300,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'What are you looking for?',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const _ModernSearchBar(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _SectionHeader(
+          title: 'Shop by Category',
+          subtitle: 'Find what you need',
+          icon: Icons.grid_view_rounded,
+        ),
+        const SizedBox(height: 16),
+        const _ShopByCategorySection(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeRightPane(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: _TopBannersCarousel(),
+        ),
+        SizedBox(height: 16),
+        Padding(
+          padding: EdgeInsets.fromLTRB(0, 4, 0, 0),
+          child: _LandscapeFlashHeader(),
+        ),
+        SizedBox(height: 12),
+        _DiscountedProductsSection(),
+        SizedBox(height: 24),
+        Padding(
+          padding: EdgeInsets.fromLTRB(0, 4, 0, 0),
+          child: _LandscapeNewArrivalsHeader(),
+        ),
+        SizedBox(height: 12),
+        _NewProductsSection(),
+        SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _LandscapeFlashHeader extends StatelessWidget {
+  const _LandscapeFlashHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+      child: _SectionHeader(
+        title: 'Flash Sale',
+        subtitle: 'Limited time offers',
+        icon: Icons.flash_on,
+        accentColor: Colors.red,
+      ),
+    );
+  }
+}
+
+class _LandscapeNewArrivalsHeader extends StatelessWidget {
+  const _LandscapeNewArrivalsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionHeader(
+      title: 'New Arrivals',
+      subtitle: 'Fresh picks just for you',
+      icon: Icons.new_releases_outlined,
+      accentColor: Colors.green,
     );
   }
 }
@@ -285,55 +529,27 @@ class _ModernSearchBarState extends State<_ModernSearchBar> {
   }
 }
 
-class _ShopByCategorySection extends StatefulWidget {
+class _ShopByCategorySection extends ConsumerWidget {
   const _ShopByCategorySection();
 
   @override
-  State<_ShopByCategorySection> createState() => _ShopByCategorySectionState();
-}
-
-class _ShopByCategorySectionState extends State<_ShopByCategorySection> {
-  late Future<List<Product>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _loadProducts();
-  }
-
-  Future<List<Product>> _loadProducts() async {
-    try {
-      return await ApiService.getProducts();
-    } catch (e) {
-      print('Error loading products for categories: $e');
-      return <Product>[];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final cols = isLandscape ? 3 : 4;
 
-    return FutureBuilder<List<Product>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _categorySkeleton(isDark);
-        }
+    final productsAsync = ref.watch(productsProvider);
 
-        if (snapshot.hasError) {
-          print('FutureBuilder error: ${snapshot.error}');
-          return _errorWidget();
-        }
-
-        final products = snapshot.data ?? <Product>[];
-
+    return productsAsync.when(
+      data: (products) {
         if (products.isEmpty) {
-          return _emptyCategories();
+          return _FriendlyErrorWidget(
+            message: "No categories available at the moment.",
+            icon: Icons.category_outlined,
+          );
         }
-
-        // Extract unique categories with null safety
         final Set<String> uniqueCategories = <String>{};
         for (final product in products) {
           final categoryName = product.categoryName?.trim();
@@ -341,23 +557,23 @@ class _ShopByCategorySectionState extends State<_ShopByCategorySection> {
             uniqueCategories.add(categoryName);
           }
         }
-
         if (uniqueCategories.isEmpty) {
-          return _emptyCategories();
+          return _FriendlyErrorWidget(
+            message: "No categories available at the moment.",
+            icon: Icons.category_outlined,
+          );
         }
-
         final categories =
             uniqueCategories.toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-
         final showcase = categories.take(8).toList();
 
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: showcase.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
             crossAxisSpacing: 16,
             mainAxisSpacing: 20,
             childAspectRatio: 0.85,
@@ -367,95 +583,53 @@ class _ShopByCategorySectionState extends State<_ShopByCategorySection> {
               label: showcase[i],
               index: i,
               isDark: isDark,
-              onTap: () => _navigateToCategory(showcase[i]),
+              onTap: () => _navigateToCategory(context, showcase[i]),
             );
           },
         );
       },
+      loading: () => _categorySkeleton(isDark, context),
+      error:
+          (err, stack) => _FriendlyErrorWidget(
+            message: "Couldn't load categories.\nCheck your connection.",
+            icon: Icons.wifi_off_rounded,
+            onRetry: () => ref.refresh(productsProvider),
+          ),
     );
   }
 
-  void _navigateToCategory(String category) {
-    try {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-          pageBuilder:
-              (_, __, ___) => ByteCartShell(
-                initialIndex: 1,
-                pages: [
-                  const HomeTab(key: PageStorageKey('Home')),
-                  shop.ShopPage(
-                    key: UniqueKey(),
-                    initialFilter: ShopFilter(category: category),
-                  ),
-                  SearchPage(key: const PageStorageKey('Search')),
-                  AccountPage(key: const PageStorageKey('Account')),
-                ],
-              ),
-          transitionsBuilder: (_, __, ___, child) => child,
-        ),
-      );
-    } catch (e) {
-      print('Navigation error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error navigating to category: $category')),
-      );
-    }
-  }
-
-  Widget _errorWidget() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 8),
-          Text(
-            'Unable to load categories',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _future = _loadProducts();
-              });
-            },
-            child: const Text('Retry'),
-          ),
-        ],
+  void _navigateToCategory(BuildContext context, String category) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder:
+            (_, __, ___) => ByteCartShell(
+              initialIndex: 1,
+              pages: [
+                const HomeTab(key: PageStorageKey('Home')),
+                shop.ShopPage(
+                  key: UniqueKey(),
+                  initialFilter: ShopFilter(category: category),
+                ),
+                SearchPage(key: const PageStorageKey('Search')),
+                AccountPage(key: const PageStorageKey('Account')),
+              ],
+            ),
+        transitionsBuilder: (_, __, ___, child) => child,
       ),
     );
   }
 
-  Widget _emptyCategories() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Icon(Icons.category_outlined, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 8),
-          Text(
-            'No categories available',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _categorySkeleton(bool isDark) {
+  Widget _categorySkeleton(bool isDark, BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final cols = isLandscape ? 3 : 4;
     final base = isDark ? Colors.grey[800]! : Colors.grey[100]!;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
+      crossAxisCount: cols,
       crossAxisSpacing: 16,
       mainAxisSpacing: 20,
       childAspectRatio: 0.85,
@@ -821,144 +995,106 @@ class _ModernDots extends StatelessWidget {
   }
 }
 
-class _DiscountedProductsSection extends StatefulWidget {
+class _DiscountedProductsSection extends ConsumerWidget {
   const _DiscountedProductsSection();
 
   @override
-  State<_DiscountedProductsSection> createState() =>
-      _DiscountedProductsSectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final discountedAsync = ref.watch(discountedProductsProvider);
 
-class _DiscountedProductsSectionState
-    extends State<_DiscountedProductsSection> {
-  late Future<List<Product>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _loadDiscountedProducts();
-  }
-
-  Future<List<Product>> _loadDiscountedProducts() async {
-    try {
-      final products = await ApiService.getProducts();
-      return products.where((p) => p.discount > 0).take(10).toList();
-    } catch (e) {
-      print('Error loading discounted products: $e');
-      return <Product>[];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Product>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _productSectionSkeleton();
-        }
-
-        if (snapshot.hasError) {
-          print('Discounted products error: ${snapshot.error}');
-          return const SizedBox.shrink();
-        }
-
-        final products = snapshot.data ?? <Product>[];
-        if (products.isEmpty) return const SizedBox.shrink();
-
-        return SizedBox(
-          height: 280,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, i) {
-              return SizedBox(
-                width: 200,
-                child: ProductCard(product: products[i]),
-              );
-            },
-          ),
-        );
+    return RefreshIndicator(
+      color:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black,
+      onRefresh: () async {
+        ref.invalidate(discountedProductsProvider);
+        await ref.refresh(discountedProductsProvider.future);
       },
+      child: discountedAsync.when(
+        data: (products) {
+          if (products.isEmpty) return const SizedBox.shrink();
+          return SizedBox(
+            height: 280,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, i) {
+                return SizedBox(
+                  width: 200,
+                  child: ProductCard(product: products[i]),
+                );
+              },
+            ),
+          );
+        },
+        loading: () => _productSectionSkeleton(context),
+        error:
+            (err, stack) => _FriendlyErrorWidget(
+              message:
+                  "Couldn't load flash sale products.\nCheck your connection.",
+              icon: Icons.wifi_off_rounded,
+              onRetry: () => ref.refresh(discountedProductsProvider),
+            ),
+      ),
     );
   }
 }
 
-class _NewProductsSection extends StatefulWidget {
+class _NewProductsSection extends ConsumerWidget {
   const _NewProductsSection();
 
   @override
-  State<_NewProductsSection> createState() => _NewProductsSectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final newAsync = ref.watch(newProductsProvider);
 
-class _NewProductsSectionState extends State<_NewProductsSection> {
-  late Future<List<Product>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _loadNewProducts();
-  }
-
-  Future<List<Product>> _loadNewProducts() async {
-    try {
-      final products = await ApiService.getProducts();
-      final newProducts =
-          products.where((p) => p.newStock).toList()..sort(
-            (a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-                .compareTo(
-                  a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-                ),
-          );
-      return newProducts.take(10).toList();
-    } catch (e) {
-      print('Error loading new products: $e');
-      return <Product>[];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Product>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _productSectionSkeleton();
-        }
-
-        if (snapshot.hasError) {
-          print('New products error: ${snapshot.error}');
-          return const SizedBox.shrink();
-        }
-
-        final products = snapshot.data ?? <Product>[];
-        if (products.isEmpty) return const SizedBox.shrink();
-
-        return SizedBox(
-          height: 280,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, i) {
-              return SizedBox(
-                width: 200,
-                child: ProductCard(product: products[i]),
-              );
-            },
-          ),
-        );
+    return RefreshIndicator(
+      color:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black,
+      onRefresh: () async {
+        ref.invalidate(newProductsProvider);
+        await ref.refresh(newProductsProvider.future);
       },
+      child: newAsync.when(
+        data: (products) {
+          if (products.isEmpty) return const SizedBox.shrink();
+          return SizedBox(
+            height: 280,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, i) {
+                return SizedBox(
+                  width: 200,
+                  child: ProductCard(product: products[i]),
+                );
+              },
+            ),
+          );
+        },
+        loading: () => _productSectionSkeleton(context),
+        error:
+            (err, stack) => _FriendlyErrorWidget(
+              message: "Couldn't load new arrivals.\nCheck your connection.",
+              icon: Icons.wifi_off_rounded,
+              onRetry: () => ref.refresh(newProductsProvider),
+            ),
+      ),
     );
   }
 }
 
-Widget _productSectionSkeleton() {
+Widget _productSectionSkeleton(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final color = isDark ? Colors.grey[800] : Colors.grey[100];
   return SizedBox(
     height: 280,
     child: ListView.separated(
@@ -970,7 +1106,7 @@ Widget _productSectionSkeleton() {
         return Container(
           width: 200,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: color,
             borderRadius: BorderRadius.circular(20),
           ),
         );

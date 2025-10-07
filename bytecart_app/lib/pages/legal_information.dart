@@ -1,13 +1,7 @@
-// Terms & Privacy (Legal) Screen
-// - Displays Terms & Conditions and Privacy Policy in tabs.
-// - Adapts to light/dark themes; constrains width in landscape for readability.
-// - Uses ExpansionTiles for collapsible sections and a contact card.
-
 import 'package:flutter/material.dart';
 
 import '../theme/theme_colours.dart';
 
-/// Legal information screen with two tabs: Terms & Conditions and Privacy Policy.
 class LegalInformationPage extends StatefulWidget {
   const LegalInformationPage({super.key});
 
@@ -48,7 +42,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      // App bar with TabBar (labels adjust for landscape).
       appBar: AppBar(
         title: const Text(
           'Legal Information',
@@ -96,7 +89,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
           ),
         ),
       ),
-      // Tab content: each tab scrolls independently.
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -107,7 +99,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Terms & Conditions tab content.
   Widget _buildTermsAndConditions() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -168,7 +159,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Privacy Policy tab content.
   Widget _buildPrivacyPolicy() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -229,7 +219,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Header card for a document (title, subtitle, leading icon).
   Widget _buildDocumentHeader(String title, String subtitle, IconData icon) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -284,7 +273,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Intro card for Terms tab.
   Widget _buildIntroCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -335,7 +323,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Intro card for Privacy tab.
   Widget _buildPrivacyIntroCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -386,7 +373,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Collapsible legal section wrapper with consistent theming.
   Widget _buildLegalSection(String title, IconData icon, Widget content) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -399,7 +385,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Theme(
-          // Disable ink effects and tint locally; preserve rounded shapes.
           data: Theme.of(context).copyWith(
             dividerColor: Colors.transparent,
             splashColor: Colors.transparent,
@@ -444,8 +429,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Reusable full-width info card used inside sections.
-  /// Now renders plain text (no bg/border) so dropdown content looks "normal".
   Widget _buildInfoBox(String title, String content, {Color? color}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = color ?? (isDark ? Colors.white : Colors.black87);
@@ -479,7 +462,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Business hours shown as plain text (no bg/border).
   Widget _buildBusinessHoursBox() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelStyle = TextStyle(
@@ -560,7 +542,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Contact card styled like the legal sections (plain bg, rounded corners, no gradient/shadow).
   Widget _buildContactCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -624,7 +605,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  /// Single contact item row used by the contact card.
   Widget _buildContactItem(
     IconData icon,
     String label,
@@ -667,7 +647,6 @@ class _LegalInformationPageState extends State<LegalInformationPage>
     );
   }
 
-  // Content builders for Terms (sections 1–8).
   Widget _buildCompanyInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,7 +792,6 @@ Maximum liability is limited to the original purchase price of the product in qu
     );
   }
 
-  // Privacy Policy content builders.
   Widget _buildInfoCollection() {
     return Column(
       children: [
@@ -995,7 +973,6 @@ Continued use of our services after updates constitutes acceptance of the revise
     );
   }
 
-  /// In landscape, center content and constrain width for better readability.
   Widget _wrapForLandscape(Widget child) {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;

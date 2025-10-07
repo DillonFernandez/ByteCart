@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/filter.dart';
-import '../models/product.dart'; // NEW
+import '../models/product.dart';
 
-// ...existing FilterSidebar code remains unchanged...
-
-// NEW: filter/sort utilities moved from ShopPage
 class FilterUtils {
   static List<Product> filterAndSort(List<Product> items, ShopFilter f) {
     Iterable<Product> result = items;
@@ -93,17 +90,21 @@ class FilterUtils {
   }
 }
 
-// NEW: Inline filters row (same look/behavior as previously in ShopPage)
 class ShopInlineFilters extends StatefulWidget {
   final ShopFilter filters;
   final ValueChanged<ShopFilter> onApply;
   final List<Product> sourceProducts;
+
+  final bool landscape;
+  final double? maxWidth;
 
   const ShopInlineFilters({
     super.key,
     required this.filters,
     required this.onApply,
     required this.sourceProducts,
+    this.landscape = false,
+    this.maxWidth,
   });
 
   @override
@@ -137,7 +138,6 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Build options from provided products
     final Set<String> catSet = {};
     final Set<String> brandSet = {};
     final Set<String> colorSet = {};
@@ -189,11 +189,19 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
     final Color subtitleText = isDark ? Colors.white60 : Colors.black54;
     const Color kMain = Color(0xFF0479FF);
 
+    double _tileWidth(double maxWidth) {
+      const spacing = 12.0;
+      if (maxWidth < 360) return maxWidth;
+      if (maxWidth < 760) return (maxWidth - spacing) / 2;
+      return (maxWidth - spacing) / 2;
+    }
+
     Widget tile({
       required IconData icon,
       required String title,
       required String value,
       required VoidCallback onTap,
+      double? width,
     }) {
       return TweenAnimationBuilder<double>(
         duration: const Duration(milliseconds: 200),
@@ -215,7 +223,7 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
                   splashFactory: NoSplash.splashFactory,
                   enableFeedback: false,
                   child: Container(
-                    width: 180,
+                    width: width ?? 180,
                     height: 64,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -323,6 +331,113 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
       return '$range$stock';
     }
 
+    if (widget.landscape) {
+      return LayoutBuilder(
+        builder: (context, cons) {
+          final maxW = widget.maxWidth ?? cons.maxWidth;
+          final w = _tileWidth(maxW);
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              tile(
+                icon: Icons.tune,
+                title: 'Sort',
+                value: sortLabel(widget.filters.sort),
+                onTap: () => _showSortSheet(context),
+                width: w,
+              ),
+              tile(
+                icon: Icons.category_outlined,
+                title: 'Category',
+                value: widget.filters.category,
+                onTap:
+                    () => _showChipSheet(
+                      context: context,
+                      title: 'Categories',
+                      options: categories,
+                      selected: widget.filters.category,
+                      onSelected:
+                          (val) => widget.onApply(
+                            ShopFilter(
+                              sort: widget.filters.sort,
+                              category: val,
+                              brand: widget.filters.brand,
+                              color: widget.filters.color,
+                              minPrice: widget.filters.minPrice,
+                              maxPrice: widget.filters.maxPrice,
+                              inStock: widget.filters.inStock,
+                            ),
+                          ),
+                      limitRows: true,
+                    ),
+                width: w,
+              ),
+              tile(
+                icon: Icons.branding_watermark_outlined,
+                title: 'Brand',
+                value: widget.filters.brand,
+                onTap:
+                    () => _showChipSheet(
+                      context: context,
+                      title: 'Brands',
+                      options: brands,
+                      selected: widget.filters.brand,
+                      onSelected:
+                          (val) => widget.onApply(
+                            ShopFilter(
+                              sort: widget.filters.sort,
+                              category: widget.filters.category,
+                              brand: val,
+                              color: widget.filters.color,
+                              minPrice: widget.filters.minPrice,
+                              maxPrice: widget.filters.maxPrice,
+                              inStock: widget.filters.inStock,
+                            ),
+                          ),
+                      limitRows: true,
+                    ),
+                width: w,
+              ),
+              tile(
+                icon: Icons.palette_outlined,
+                title: 'Color',
+                value: widget.filters.color,
+                onTap:
+                    () => _showChipSheet(
+                      context: context,
+                      title: 'Colors',
+                      options: colors,
+                      selected: widget.filters.color,
+                      onSelected:
+                          (val) => widget.onApply(
+                            ShopFilter(
+                              sort: widget.filters.sort,
+                              category: widget.filters.category,
+                              brand: widget.filters.brand,
+                              color: val,
+                              minPrice: widget.filters.minPrice,
+                              maxPrice: widget.filters.maxPrice,
+                              inStock: widget.filters.inStock,
+                            ),
+                          ),
+                      limitRows: true,
+                    ),
+                width: w,
+              ),
+              tile(
+                icon: Icons.monetization_on_outlined,
+                title: 'Price & Stock',
+                value: priceSummary(),
+                onTap: () => _showPriceSheet(context),
+                width: w,
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.only(left: 4),
@@ -357,7 +472,6 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
                           inStock: widget.filters.inStock,
                         ),
                       ),
-                  // Match Brand/Color pill behavior
                   limitRows: true,
                 ),
           ),
@@ -539,7 +653,6 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () {
-                                // Auto-apply clear immediately
                                 onSelected('');
                                 Navigator.pop(context);
                               },
@@ -983,7 +1096,6 @@ class _ShopInlineFiltersState extends State<ShopInlineFilters>
                       Row(
                         children: [
                           Expanded(
-                            // Changed: remove icon and only clear price/stock
                             child: OutlinedButton(
                               onPressed: () {
                                 widget.onApply(

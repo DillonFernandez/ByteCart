@@ -1,17 +1,12 @@
-// Shared App Bar, Bottom Navigation, and Shell Scaffold for ByteCart.
-// Provides a branded AppBar with logo/cart, a themed 4-tab BottomNavigationBar,
-// and a shell that hosts pages via an IndexedStack with dark/light awareness.
-
 import 'package:flutter/material.dart';
 
 import '../pages/account.dart';
 import '../pages/cart.dart';
 import '../pages/search.dart' as search;
 import '../pages/shop.dart' as shop;
-import '../services/api_service.dart'; // ADDED: to load cart count
-import '../theme/theme_colours.dart'; // ADDED: for badge color
+import '../services/api_service.dart';
+import '../theme/theme_colours.dart';
 
-// ADDED: centralized cart counter with notifier
 class CartCounter {
   static final ValueNotifier<int> count = ValueNotifier<int>(0);
 
@@ -19,26 +14,20 @@ class CartCounter {
     try {
       final items = await ApiService.getCartItems();
       count.value = items.length;
-    } catch (_) {
-      // ignore errors for badge updates
-    }
+    } catch (_) {}
   }
 }
 
-// Branded AppBar with left-aligned logo and optional cart action.
 class ByteCartAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onCartTap;
   final String? logoAssetPath;
-
-  // REMOVED: cartCount (now reactive via CartCounter)
 
   const ByteCartAppBar({
     super.key,
     required this.title,
     this.onCartTap,
     this.logoAssetPath,
-    // ...removed cartCount...
   });
 
   @override
@@ -53,7 +42,6 @@ class ByteCartAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
-      // NEW: no back arrow in shell
       title: Row(
         children: [
           Padding(
@@ -70,7 +58,8 @@ class ByteCartAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: ValueListenableBuilder<int>(
               valueListenable: CartCounter.count,
               builder:
-                  (context, cartCount, _) => Stack(
+                  (context, cartCount, _) =>
+                  Stack(
                     clipBehavior: Clip.none,
                     children: [
                       IconButton(
@@ -92,9 +81,12 @@ class ByteCartAppBar extends StatelessWidget implements PreferredSizeWidget {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color:
-                                    Theme.of(
-                                      context,
-                                    ).appBarTheme.backgroundColor ??
+                                Theme
+                                    .of(
+                                  context,
+                                )
+                                    .appBarTheme
+                                    .backgroundColor ??
                                     Colors.transparent,
                                 width: 1,
                               ),
@@ -123,7 +115,6 @@ class ByteCartAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// Resolves the logo asset; falls back to an icon if the asset fails to load.
 class _Logo extends StatelessWidget {
   final String? assetPath;
 
@@ -131,7 +122,10 @@ class _Logo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = Theme.of(context).iconTheme.size ?? 24;
+    final size = Theme
+        .of(context)
+        .iconTheme
+        .size ?? 24;
     final path = assetPath ?? 'assets/images/logo.webp';
     return Image.asset(
       path,
@@ -141,7 +135,6 @@ class _Logo extends StatelessWidget {
   }
 }
 
-// Themed BottomNavigationBar with 4 tabs and subtle selected background highlight.
 class ByteCartBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -154,7 +147,9 @@ class ByteCartBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     final bgColor = isDark ? Colors.grey[900]! : Colors.grey[100]!;
     final itemColor = isDark ? Colors.white : Colors.black;
     final selectedColor = const Color(0xFF0479FF);
@@ -206,22 +201,19 @@ class ByteCartBottomNav extends StatelessWidget {
     );
   }
 
-  // Helper to build a nav item with optional selected background.
-  BottomNavigationBarItem _navItem(
-    IconData icon,
-    String label,
-    bool selected,
-    Color selectedBgColor,
-  ) {
+  BottomNavigationBarItem _navItem(IconData icon,
+      String label,
+      bool selected,
+      Color selectedBgColor,) {
     return BottomNavigationBarItem(
       icon: Container(
         decoration:
-            selected
-                ? BoxDecoration(
-                  color: selectedBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                )
-                : null,
+        selected
+            ? BoxDecoration(
+          color: selectedBgColor,
+          borderRadius: BorderRadius.circular(8),
+        )
+            : null,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         child: Icon(icon),
       ),
@@ -230,8 +222,6 @@ class ByteCartBottomNav extends StatelessWidget {
   }
 }
 
-// Application shell: manages AppBar, body (IndexedStack), and BottomNavigationBar.
-// Supports optional overrides for pages and titles; defaults to Home/Shop/Search/Account.
 class ByteCartShell extends StatefulWidget {
   final int initialIndex;
   final String? logoAssetPath;
@@ -251,47 +241,39 @@ class ByteCartShell extends StatefulWidget {
 }
 
 class _ByteCartShellState extends State<ByteCartShell> {
-  // Current tab index and resolved pages/titles.
   late int _currentIndex;
   late List<String> _titles;
   late List<Widget> _pages;
 
-  // NEW: when true, rebuild Shop/Search next time it's selected to reset
   bool _shopShouldReset = false;
-  bool _searchShouldReset = false; // NEW
+  bool _searchShouldReset = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize active tab and fallback pages/titles if none provided.
     _currentIndex = widget.initialIndex;
     _titles = widget.titles ?? const ['Home', 'Shop', 'Search', 'Account'];
     _pages =
         widget.pages ??
-        [
-          const Placeholder(key: PageStorageKey('Home')),
-          // Use UniqueKey so the page mounts fresh when recreated
-          shop.ShopPage(key: UniqueKey()),
-          search.SearchPage(key: UniqueKey()),
-          const AccountPage(key: PageStorageKey('Account')),
-        ];
-    // ADDED: initial badge load
+            [
+              const Placeholder(key: PageStorageKey('Home')),
+              shop.ShopPage(key: UniqueKey()),
+              search.SearchPage(key: UniqueKey()),
+              const AccountPage(key: PageStorageKey('Account')),
+            ];
     CartCounter.refreshFromApi();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold hosting the app bar, page stack, and bottom navigation.
     return Scaffold(
       appBar: ByteCartAppBar(
         title: _titles[_currentIndex],
         logoAssetPath: widget.logoAssetPath,
-        // REMOVED: cartCount: _cartCount
         onCartTap: () async {
           await Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const CartPage()));
-          // ADDED: refresh after returning from CartPage
           CartCounter.refreshFromApi();
         },
       ),
@@ -300,14 +282,11 @@ class _ByteCartShellState extends State<ByteCartShell> {
         currentIndex: _currentIndex,
         onTap: (i) {
           setState(() {
-            // If leaving Shop/Search, mark for reset
-            if (_currentIndex == 1 && i != 1)
-              _shopShouldReset = true; // existing
-            if (_currentIndex == 2 && i != 2) _searchShouldReset = true; // NEW
+            if (_currentIndex == 1 && i != 1) _shopShouldReset = true;
+            if (_currentIndex == 2 && i != 2) _searchShouldReset = true;
 
             _currentIndex = i;
 
-            // Only recreate Shop/Search when using default pages
             if (widget.pages == null) {
               if (i == 1) {
                 _pages[1] = shop.ShopPage(key: UniqueKey());
@@ -316,18 +295,15 @@ class _ByteCartShellState extends State<ByteCartShell> {
               }
             }
 
-            // When returning, recreate the page if flagged to reset
             if (i == 1 && _shopShouldReset) {
               _shopShouldReset = false;
               _pages[1] = shop.ShopPage(key: UniqueKey());
             }
             if (i == 2 && _searchShouldReset) {
-              // NEW
               _searchShouldReset = false;
               _pages[2] = search.SearchPage(key: UniqueKey());
             }
           });
-          // ADDED: opportunistic refresh on tab change
           CartCounter.refreshFromApi();
         },
       ),

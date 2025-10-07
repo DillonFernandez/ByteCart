@@ -39,6 +39,10 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_riverpod: ^3.0.1
   cached_network_image: ^3.4.1
+  internet_connection_checker_plus: ^2.9.0
+  geocoding: ^4.0.0
+  geolocator: ^14.0.2
+  device_display_brightness: ^0.0.6
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +88,7 @@ flutter:
     - assets/images/icons/Mastercard.webp
     - assets/images/icons/Mintpay.webp
     - assets/images/icons/Visa.webp
+    - assets/images/icons/COD.webp
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

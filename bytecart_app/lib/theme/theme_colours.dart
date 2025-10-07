@@ -1,10 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Main app colour
 const Color kMainColour = Color(0xFF0479FF);
 
-// Light/Dark themes with requested backgrounds
+const String _kThemePrefKey = 'app_theme_mode';
+final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(
+  ThemeMode.system,
+);
+
+Future<void> loadSavedThemeMode() async {
+  final prefs = await SharedPreferences.getInstance();
+  final idx = prefs.getInt(_kThemePrefKey);
+  if (idx != null && idx >= 0 && idx < ThemeMode.values.length) {
+    themeModeNotifier.value = ThemeMode.values[idx];
+  }
+}
+
+Future<void> setAppThemeMode(ThemeMode mode) async {
+  themeModeNotifier.value = mode;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kThemePrefKey, mode.index);
+}
+
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
   colorScheme: ColorScheme.fromSeed(
@@ -17,12 +35,10 @@ final ThemeData lightTheme = ThemeData(
     backgroundColor: Colors.transparent,
     systemOverlayStyle: SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness:
-          Brightness.dark, // Android: dark icons on light bg
-      statusBarBrightness: Brightness.light, // iOS: dark icons on light bg
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
     ),
   ),
-  // Added: themed progress indicators
   progressIndicatorTheme: const ProgressIndicatorThemeData(color: kMainColour),
 );
 
@@ -38,11 +54,9 @@ final ThemeData darkTheme = ThemeData(
     backgroundColor: Colors.transparent,
     systemOverlayStyle: SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness:
-          Brightness.light, // Android: light icons on dark bg
-      statusBarBrightness: Brightness.dark, // iOS: light icons on dark bg
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
     ),
   ),
-  // Added: themed progress indicators
   progressIndicatorTheme: const ProgressIndicatorThemeData(color: kMainColour),
 );

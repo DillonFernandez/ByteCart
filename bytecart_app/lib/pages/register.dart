@@ -1,121 +1,137 @@
-// Register Page: user account creation with form validation, consent dialog for terms/privacy,
-// responsive portrait/landscape layouts, themed SnackBars, and navigation to Home on success.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../services/api_service.dart';
 import '../theme/theme_colours.dart';
 import 'home.dart';
 import 'legal_information.dart';
 
-/// Entry widget for the registration flow.
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+final nameControllerProvider = Provider.autoDispose(
+  (ref) => TextEditingController(),
+);
+final emailControllerProvider = Provider.autoDispose(
+  (ref) => TextEditingController(),
+);
+final passwordControllerProvider = Provider.autoDispose(
+  (ref) => TextEditingController(),
+);
+final confirmPasswordControllerProvider = Provider.autoDispose(
+  (ref) => TextEditingController(),
+);
 
-  @override
-  State<RegisterPage> createState() => _RegisterPageState();
+final isPasswordVisibleProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
+final isConfirmPasswordVisibleProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
+final isLoadingProvider = StateProvider.autoDispose<bool>((ref) => false);
+final acceptTermsProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+class RegisterMessage {
+  final String? message;
+  final bool isError;
+  final IconData? icon;
+
+  RegisterMessage({this.message, this.isError = false, this.icon});
 }
 
-class _RegisterPageState extends State<RegisterPage> {
-  // Form state and text controllers.
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+final registerMessageProvider = StateProvider.autoDispose<RegisterMessage?>(
+  (ref) => null,
+);
 
-  // Local UI state.
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false;
-  bool _acceptTerms = false;
+class RegisterController extends StateNotifier<void> {
+  final Ref ref;
 
-  @override
-  void dispose() {
-    // Dispose controllers to avoid memory leaks.
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
+  RegisterController(this.ref) : super(null);
 
-  // Submit handler: validates inputs, checks terms and password match,
-  // calls API, shows feedback, and navigates to Home on success.
-  Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please accept the terms to continue")),
+  Future<void> register(BuildContext context) async {
+    final formKey = ref.read(_formKeyProvider);
+    final nameCtrl = ref.read(nameControllerProvider);
+    final emailCtrl = ref.read(emailControllerProvider);
+    final passCtrl = ref.read(passwordControllerProvider);
+    final confirmCtrl = ref.read(confirmPasswordControllerProvider);
+    final acceptTerms = ref.read(acceptTermsProvider);
+
+    if (!formKey.currentState!.validate()) return;
+    if (!acceptTerms) {
+      ref.read(registerMessageProvider.notifier).state = RegisterMessage(
+        message: "Please accept the terms to continue.",
+        isError: true,
+        icon: Icons.privacy_tip_outlined,
       );
       return;
     }
-    // Show mismatch via error SnackBar for a consistent UX.
-    if (_passwordController.text != _confirmPasswordController.text) {
-      final theme = Theme.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: theme.colorScheme.error,
-          content: Text(
-            'Passwords do not match',
-            style: TextStyle(color: theme.colorScheme.onError),
-          ),
-        ),
+    if (passCtrl.text != confirmCtrl.text) {
+      ref.read(registerMessageProvider.notifier).state = RegisterMessage(
+        message: "Passwords do not match. Please try again.",
+        isError: true,
+        icon: Icons.lock_person_outlined,
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    ref.read(isLoadingProvider.notifier).state = true;
+    ref.read(registerMessageProvider.notifier).state = null;
 
     try {
       final result = await ApiService.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
+        name: nameCtrl.text.trim(),
+        email: emailCtrl.text.trim(),
+        password: passCtrl.text,
+        confirmPassword: confirmCtrl.text,
+      );
+      ref.read(isLoadingProvider.notifier).state = false;
+
+      ref.read(registerMessageProvider.notifier).state = RegisterMessage(
+        message: "Welcome ${result['user']['name']}!",
+        isError: false,
+        icon: Icons.check_circle_outline,
       );
 
-      setState(() => _isLoading = false);
-
-      // Themed success feedback.
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: isDark ? Colors.white : Colors.black,
-          content: Text(
-            "Welcome ${result['user']['name']}!",
-            style: TextStyle(color: isDark ? Colors.black : Colors.white),
-          ),
-        ),
-      );
-
-      // Navigate to Home and clear back stack.
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
+      Future.delayed(const Duration(milliseconds: 800), () {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (route) => false,
+        );
+      });
+    } on ApiException catch (e) {
+      ref.read(isLoadingProvider.notifier).state = false;
+      ref.read(registerMessageProvider.notifier).state = RegisterMessage(
+        message: e.message ?? "Registration failed. Please try again.",
+        isError: true,
+        icon: Icons.error_outline,
       );
     } catch (e) {
-      setState(() => _isLoading = false);
-
-      // Show API or unexpected error.
-      final theme = Theme.of(context);
-      final msg = e is ApiException ? e.message : e.toString();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: theme.colorScheme.error,
-          content: Text(
-            msg,
-            style: TextStyle(color: theme.colorScheme.onError),
-          ),
-        ),
+      ref.read(isLoadingProvider.notifier).state = false;
+      ref.read(registerMessageProvider.notifier).state = RegisterMessage(
+        message: "Connection error. Please check your internet and try again.",
+        isError: true,
+        icon: Icons.wifi_off,
       );
     }
   }
+}
 
-  // Displays a consent dialog summarizing Terms & Conditions and Privacy Policy.
-  // Sets _acceptTerms when user confirms.
-  Future<void> _showConsentDialog() async {
+final registerControllerProvider =
+    StateNotifierProvider.autoDispose<RegisterController, void>(
+      (ref) => RegisterController(ref),
+    );
+
+final _formKeyProvider = Provider.autoDispose<GlobalKey<FormState>>(
+  (ref) => GlobalKey<FormState>(),
+);
+
+final _registerPageContextProvider = StateProvider<BuildContext?>(
+  (ref) => null,
+);
+
+class RegisterPage extends ConsumerWidget {
+  const RegisterPage({super.key});
+
+  Future<void> _showConsentDialog(BuildContext context, WidgetRef ref) async {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -172,7 +188,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       builder:
                                           (context) =>
                                               const LegalInformationPage(),
-                                      settings: RouteSettings(arguments: 0),
+                                      settings: const RouteSettings(
+                                        arguments: 0,
+                                      ),
                                     ),
                                   );
                                 },
@@ -204,7 +222,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       builder:
                                           (context) =>
                                               const LegalInformationPage(),
-                                      settings: RouteSettings(arguments: 1),
+                                      settings: const RouteSettings(
+                                        arguments: 1,
+                                      ),
                                     ),
                                   );
                                 },
@@ -275,22 +295,32 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
     );
     if (result == true) {
-      setState(() {
-        _acceptTerms = true;
-      });
+      ref.read(acceptTermsProvider.notifier).state = true;
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Theming and layout constants.
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     const double designWidth = 412.0;
 
-    // Reusable screen content for both orientations.
-    // CHANGED: wrap content with Theme to style cursor/selection/handles
+    final nameController = ref.watch(nameControllerProvider);
+    final emailController = ref.watch(emailControllerProvider);
+    final passwordController = ref.watch(passwordControllerProvider);
+    final confirmPasswordController = ref.watch(
+      confirmPasswordControllerProvider,
+    );
+    final isPasswordVisible = ref.watch(isPasswordVisibleProvider);
+    final isConfirmPasswordVisible = ref.watch(
+      isConfirmPasswordVisibleProvider,
+    );
+    final isLoading = ref.watch(isLoadingProvider);
+    final acceptTerms = ref.watch(acceptTermsProvider);
+    final message = ref.watch(registerMessageProvider);
+    final formKey = ref.watch(_formKeyProvider);
+
     final content = Theme(
       data: theme.copyWith(
         textSelectionTheme: TextSelectionThemeData(
@@ -304,13 +334,12 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 35),
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header: title and subtitle.
                 const SizedBox(height: 12),
                 Text(
                   'Join ByteCart and start\nshopping today',
@@ -333,7 +362,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 28),
 
-                // Segmented control: navigate back to Login or stay on Register.
                 Container(
                   decoration: BoxDecoration(
                     color: isDark ? Colors.grey[800] : Colors.grey[100],
@@ -394,9 +422,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 28),
 
-                // Name field.
                 TextFormField(
-                  controller: _nameController,
+                  controller: nameController,
                   textInputAction: TextInputAction.next,
                   style: TextStyle(color: colorScheme.onBackground),
                   decoration: InputDecoration(
@@ -440,9 +467,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 14),
 
-                // Email field.
                 TextFormField(
-                  controller: _emailController,
+                  controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   style: TextStyle(color: colorScheme.onBackground),
@@ -492,10 +518,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 14),
 
-                // Password field with visibility toggle.
                 TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
+                  controller: passwordController,
+                  obscureText: !isPasswordVisible,
                   textInputAction: TextInputAction.next,
                   style: TextStyle(color: colorScheme.onBackground),
                   decoration: InputDecoration(
@@ -509,15 +534,16 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible
+                        isPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
                         color: colorScheme.onBackground.withOpacity(0.5),
                       ),
                       onPressed:
-                          () => setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          }),
+                          () =>
+                              ref
+                                  .read(isPasswordVisibleProvider.notifier)
+                                  .state = !isPasswordVisible,
                     ),
                     filled: true,
                     fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
@@ -554,12 +580,14 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 14),
 
-                // Confirm password field with visibility toggle.
                 TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: !_isConfirmPasswordVisible,
+                  controller: confirmPasswordController,
+                  obscureText: !isConfirmPasswordVisible,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _handleRegister(),
+                  onFieldSubmitted:
+                      (_) => ref
+                          .read(registerControllerProvider.notifier)
+                          .register(context),
                   style: TextStyle(color: colorScheme.onBackground),
                   decoration: InputDecoration(
                     hintText: 'Confirm Password',
@@ -572,16 +600,18 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isConfirmPasswordVisible
+                        isConfirmPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
                         color: colorScheme.onBackground.withOpacity(0.5),
                       ),
                       onPressed:
-                          () => setState(() {
-                            _isConfirmPasswordVisible =
-                                !_isConfirmPasswordVisible;
-                          }),
+                          () =>
+                              ref
+                                  .read(
+                                    isConfirmPasswordVisibleProvider.notifier,
+                                  )
+                                  .state = !isConfirmPasswordVisible,
                     ),
                     filled: true,
                     fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
@@ -610,28 +640,24 @@ class _RegisterPageState extends State<RegisterPage> {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
                     }
-                    return null; // Mismatch handled in submit.
+                    return null;
                   },
                 ),
                 const SizedBox(height: 14),
 
-                // Terms & Privacy acceptance with deep links to details.
                 Row(
                   children: [
                     Checkbox(
-                      value: _acceptTerms,
+                      value: acceptTerms,
                       onChanged: (value) async {
-                        if (value == true && !_acceptTerms) {
-                          await _showConsentDialog();
-                        } else if (value == false && _acceptTerms) {
-                          setState(() {
-                            _acceptTerms = false;
-                          });
+                        if (value == true && !acceptTerms) {
+                          await _showConsentDialog(context, ref);
+                        } else if (value == false && acceptTerms) {
+                          ref.read(acceptTermsProvider.notifier).state = false;
                         }
                       },
                       activeColor: kMainColour,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      // CHANGED: rounded checkbox
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(5),
                       ),
@@ -653,7 +679,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       builder:
                                           (context) =>
                                               const LegalInformationPage(),
-                                      settings: RouteSettings(arguments: 0),
+                                      settings: const RouteSettings(
+                                        arguments: 0,
+                                      ),
                                     ),
                                   );
                                 },
@@ -684,7 +712,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       builder:
                                           (context) =>
                                               const LegalInformationPage(),
-                                      settings: RouteSettings(arguments: 1),
+                                      settings: const RouteSettings(
+                                        arguments: 1,
+                                      ),
                                     ),
                                   );
                                 },
@@ -706,10 +736,68 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Submit button with loading state (disabled until terms accepted).
+                if (message != null && message.message != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color:
+                            message.isError
+                                ? (isDark ? Colors.red[700] : Colors.red[100])
+                                : (isDark
+                                    ? Colors.green[700]
+                                    : Colors.green[100]),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            message.icon ??
+                                (message.isError
+                                    ? Icons.error_outline
+                                    : Icons.check_circle_outline),
+                            color:
+                                message.isError
+                                    ? (isDark
+                                        ? Colors.red[100]
+                                        : Colors.red[700])
+                                    : (isDark
+                                        ? Colors.green[100]
+                                        : Colors.green[700]),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              message.message!,
+                              style: TextStyle(
+                                color:
+                                    message.isError
+                                        ? (isDark
+                                            ? Colors.red[100]
+                                            : Colors.red[900])
+                                        : (isDark
+                                            ? Colors.green[100]
+                                            : Colors.green[900]),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 ElevatedButton(
                   onPressed:
-                      (_isLoading || !_acceptTerms) ? null : _handleRegister,
+                      (isLoading || !acceptTerms)
+                          ? null
+                          : () => ref
+                              .read(registerControllerProvider.notifier)
+                              .register(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kMainColour,
                     foregroundColor: Colors.white,
@@ -720,14 +808,14 @@ class _RegisterPageState extends State<RegisterPage> {
                     elevation: 0,
                   ),
                   child:
-                      _isLoading
-                          ? const SizedBox(
+                      isLoading
+                          ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                                isDark ? Colors.white : Colors.black,
                               ),
                             ),
                           )
@@ -741,7 +829,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Alternative registration methods.
                 Row(
                   children: [
                     Expanded(
@@ -767,14 +854,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 18),
 
-                // Social register buttons (hook up providers if available).
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Google register entry point (if implemented).
-                        },
+                        onPressed: () {},
                         icon: Image.asset(
                           isDark
                               ? 'assets/images/icons/google_d.webp'
@@ -798,9 +882,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Apple register entry point (if implemented).
-                        },
+                        onPressed: () {},
                         icon: Image.asset(
                           isDark
                               ? 'assets/images/icons/apple_d.webp'
@@ -831,63 +913,62 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
 
-    // Orientation-specific scaffolding: portrait scales to a baseline width; landscape centers wider content.
-    return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            if (orientation == Orientation.portrait) {
-              // Portrait: fixed baseline width + scaled content for consistent look.
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: designWidth),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: designWidth,
-                        child: MediaQuery(
-                          // Lock text scaling for predictable layout.
-                          data: MediaQuery.of(
-                            context,
-                          ).copyWith(textScaler: const TextScaler.linear(1.0)),
-                          child: content,
+    return ProviderScope(
+      overrides: [_registerPageContextProvider.overrideWith((ref) => context)],
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              if (orientation == Orientation.portrait) {
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: designWidth),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: designWidth,
+                          child: MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: content,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            } else {
-              // Landscape: centered, scrollable column with a wider max width.
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
+                );
+              } else {
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
                       ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: content,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: content,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              );
-            }
-          },
+                    );
+                  },
+                );
+              }
+            },
+          ),
         ),
       ),
     );

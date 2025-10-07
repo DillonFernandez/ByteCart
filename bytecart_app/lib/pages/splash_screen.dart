@@ -1,7 +1,3 @@
-// Splash Screen: introduces the brand (logo, headline, hero with reflection) and a swipe-to-start CTA.
-// Portrait scales from a baseline width; landscape uses a two-column layout. Status bar adapts to theme.
-// If a session exists, the user is redirected to Home immediately.
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,7 +6,6 @@ import '../theme/theme_colours.dart';
 import 'home.dart';
 import 'login.dart';
 
-// Root splash screen widget with session check and responsive layout.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -19,11 +14,9 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  // Session check: after first frame, redirect to Home if already authenticated.
   @override
   void initState() {
     super.initState();
-    // If already authenticated, skip splash and go straight to Home.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final loggedIn = await ApiService.isLoggedIn();
       if (!mounted) return;
@@ -39,7 +32,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Status bar: adapt icon brightness to theme and keep a transparent background.
     final overlay = ((Theme.of(context).brightness == Brightness.dark)
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark)
@@ -49,13 +41,11 @@ class _SplashScreenState extends State<SplashScreen> {
       value: overlay,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        // Responsive layout: landscape = two-column; portrait = vertically stacked with scaling.
         body: OrientationBuilder(
           builder: (context, orientation) {
             if (orientation == Orientation.landscape) {
               final mq = MediaQuery.of(context);
               return MediaQuery(
-                // Clamp text scale in landscape to avoid overflow in tight areas.
                 data: mq.copyWith(
                   textScaleFactor:
                       (mq.textScaleFactor.clamp(1.0, 1.3)).toDouble(),
@@ -68,14 +58,12 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               );
             }
-            // Portrait baseline scaling for consistent proportions across devices.
             final mq = MediaQuery.of(context);
             const baseWidth = 411.0;
             final scale = (mq.size.width / baseWidth);
             double s(double v) => v * scale;
 
             return MediaQuery(
-              // Freeze text scale in portrait for a consistent look.
               data: mq.copyWith(textScaleFactor: 1.0),
               child: SafeArea(
                 child: Padding(
@@ -100,7 +88,6 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// App logo (top-left).
 class _HeaderSection extends StatelessWidget {
   const _HeaderSection({this.logoHeight = 30});
 
@@ -118,7 +105,6 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-// Marketing headline (font size configurable).
 class _HeroSection extends StatelessWidget {
   const _HeroSection({this.fontSize = 50});
 
@@ -141,7 +127,6 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-// Product hero image with mirrored reflection; scales in portrait, responsive in landscape.
 class _ImageSection extends StatelessWidget {
   const _ImageSection({this.scale});
 
@@ -153,7 +138,6 @@ class _ImageSection extends StatelessWidget {
     final isLandscape = size.width > size.height;
 
     if (scale != null && !isLandscape) {
-      // Portrait: scale from baseline values.
       final s = (double v) => v * scale!;
       final double mainHeight = s(420.0);
       final double reflectHeight = s(340.0);
@@ -209,7 +193,6 @@ class _ImageSection extends StatelessWidget {
       );
     }
 
-    // Landscape/default: responsive sizes and offsets.
     final double mainHeight =
         isLandscape ? (size.height * 0.85).clamp(180.0, 500.0) : 420.0;
     final double reflectHeight =
@@ -267,7 +250,6 @@ class _ImageSection extends StatelessWidget {
   }
 }
 
-// Tagline and the swipe-to-start call-to-action.
 class _BottomSection extends StatelessWidget {
   const _BottomSection({this.scale = 1.0});
 
@@ -299,7 +281,6 @@ class _BottomSection extends StatelessWidget {
   }
 }
 
-// Interactive slider: swipe to navigate to LoginPage; animates thumb and progress fill.
 class _SwipeSlider extends StatefulWidget {
   const _SwipeSlider({this.scale = 1.0});
 
@@ -344,7 +325,6 @@ class _SwipeSliderState extends State<_SwipeSlider>
     super.dispose();
   }
 
-  // Animate the thumb to a target position using an ease-out curve.
   void _animateTo(double target) {
     _controller.stop();
     if (_controllerListener != null) {
@@ -363,7 +343,6 @@ class _SwipeSliderState extends State<_SwipeSlider>
       ..forward(from: 0);
   }
 
-  // Navigate when threshold reached; otherwise snap back.
   void _onRelease() {
     const threshold = 0.65;
     if (_percent >= threshold) {
@@ -375,7 +354,7 @@ class _SwipeSliderState extends State<_SwipeSlider>
         ).push(MaterialPageRoute(builder: (_) => const LoginPage())).then((_) {
           if (!mounted) return;
           setState(() {
-            _dragX = 0.0; // reset to start when coming back
+            _dragX = 0.0;
           });
         });
       });
@@ -477,20 +456,17 @@ class _SwipeSliderState extends State<_SwipeSlider>
   }
 }
 
-// Landscape layout: left column (scrollable content), right column (product image).
 class _LandscapeLayout extends StatelessWidget {
   const _LandscapeLayout();
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // Responsive headline size for landscape.
     final double heroFont = (size.width * 0.045).clamp(32.0, 46.0).toDouble();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Left column: scrollable content (logo, headline, CTA).
         Expanded(
           flex: 6,
           child: LayoutBuilder(
@@ -519,7 +495,6 @@ class _LandscapeLayout extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 24),
-        // Right column: product image with reflection.
         Expanded(flex: 5, child: _ImageSection()),
       ],
     );

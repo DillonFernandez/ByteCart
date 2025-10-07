@@ -17,17 +17,14 @@ class ProductModel {
     required this.images,
   });
 
-  // Add getter for parsed colors
   List<String> get colorList {
     if (colors == null || colors!.isEmpty) return [];
     try {
-      // Try parsing as JSON array first
       final decoded = jsonDecode(colors!);
       if (decoded is List) {
         return decoded.map((e) => e.toString()).toList();
       }
     } catch (_) {
-      // Fallback: split by comma
       return colors!
           .split(',')
           .map((c) => c.trim())
@@ -38,7 +35,6 @@ class ProductModel {
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Safely coerce id
     int _asInt(dynamic v) {
       if (v is int) return v;
       if (v is double) return v.toInt();
@@ -46,14 +42,12 @@ class ProductModel {
       return 0;
     }
 
-    // Safely coerce double
     double _asDouble(dynamic v) {
       if (v is num) return v.toDouble();
       if (v is String) return double.tryParse(v) ?? 0.0;
       return 0.0;
     }
 
-    // Safely parse images as JSON string or List
     List<String> _parseImages(dynamic v) {
       if (v == null) return <String>[];
       try {
@@ -67,7 +61,6 @@ class ProductModel {
           return v.map((e) => e.toString()).toList();
         }
       } catch (_) {
-        // Fallback: treat as single path string
         if (v is String && v.isNotEmpty) return <String>[v];
       }
       return <String>[];
@@ -95,8 +88,6 @@ class Product {
   final bool newStock;
   final DateTime? createdAt;
   final List<ProductModel> models;
-
-  // New: optional category name
   final String? categoryName;
 
   Product({
@@ -110,7 +101,6 @@ class Product {
     required this.newStock,
     this.createdAt,
     required this.models,
-    // New
     this.categoryName,
   });
 
@@ -139,17 +129,16 @@ class Product {
 
     final dynamic modelsRaw = json['models'];
     final List<ProductModel> models =
-        (modelsRaw is List)
-            ? modelsRaw
-                .whereType<Map<String, dynamic>>()
-                .map((m) => ProductModel.fromJson(m))
-                .toList()
-            : <ProductModel>[];
+    (modelsRaw is List)
+        ? modelsRaw
+        .whereType<Map<String, dynamic>>()
+        .map((m) => ProductModel.fromJson(m))
+        .toList()
+        : <ProductModel>[];
 
-    // Clamp discount into 0..100 to keep UI consistent
     final int parsedDiscount = _asInt(json['discount'] ?? 0);
     final int clampedDiscount =
-        parsedDiscount < 0 ? 0 : (parsedDiscount > 100 ? 100 : parsedDiscount);
+    parsedDiscount < 0 ? 0 : (parsedDiscount > 100 ? 100 : parsedDiscount);
 
     return Product(
       id: _asInt(json['id']),
@@ -162,7 +151,6 @@ class Product {
       newStock: _asBool(json['new_stock']),
       createdAt: _asDate(json['created_at']),
       models: models,
-      // New: parse possible category field(s) if present
       categoryName: (json['category_name'] ?? json['category'])?.toString(),
     );
   }
