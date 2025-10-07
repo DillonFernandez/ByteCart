@@ -104,25 +104,11 @@ This project demonstrates proficiency in:
 
 **Developer**: Dillon Fernandez  
 **Email**: dillonfernandez@gmail.com  
-**Institution**: [University Name]
-
----
-
-<div align="center">
-  <p><strong>Disclaimer</strong></p>
-  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
-</div>
-</div>
-**Email**: dillonfernandez@gmail.com  
-**Institution**: [University Name]
-
----
-
-<div align="center">
-  <p><strong>Disclaimer</strong></p>
-  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
-
-**Email**: dillonfernandez@gmail.com  
 **Institution**: APIIT
 
+---
+
+<div align="center">
+  <p><strong>Disclaimer</strong></p>
+  <p><em>This is an academic project developed for educational purposes and is not intended for commercial use.</em></p>
 </div>
