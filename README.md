@@ -11,7 +11,7 @@
 
 ---
 
-## Overview
+<h2>Overview</h2>
 
 ByteCart is a comprehensive e-commerce solution for electronics shopping, featuring cross-platform mobile applications and a robust web platform. Built with Flutter and Laravel, this project demonstrates modern development practices and intelligent user experience features.
 
@@ -19,13 +19,13 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-## Key Features
+<h2>Key Features</h2>
 
 <table>
 <tr>
 <td width="50%">
 
-### Smart User Interface (Mobile App)
+<h3>Smart User Interface (Mobile App)</h3>
 
 - **Adaptive Theming** - Automatic light/dark mode switching
 - **Manual Theme Control** - User preference override
@@ -34,7 +34,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 </td>
 <td width="50%">
 
-### Location Intelligence (Mobile App)
+<h3>Location Intelligence (Mobile App)</h3>
 
 - **Auto Location Detection** - Smart address completion
 - **Shipping Integration** - Automatic address filling
@@ -45,7 +45,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 <tr>
 <td width="50%">
 
-### Connectivity Management (Mobile App)
+<h3>Connectivity Management (Mobile App)</h3>
 
 - **Real-time Status** - Online/offline indicators
 - **Smart Synchronization** - Automatic data sync
@@ -54,7 +54,7 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 </td>
 <td width="50%">
 
-### E-commerce Core (App & Website)
+<h3>E-commerce Core (App & Website)</h3>
 
 - **Product Catalog** - Electronics inventory
 - **Shopping Cart** - Advanced cart management
@@ -67,9 +67,9 @@ ByteCart is a comprehensive e-commerce solution for electronics shopping, featur
 
 ---
 
-## Technology Stack
+<h2>Technology Stack</h2>
 
-### Mobile Application
+<h3>Mobile Application</h3>
 
 ```
 Framework    Flutter
@@ -77,7 +77,7 @@ Language     Dart
 Platforms    iOS • Android
 ```
 
-### Web Platform
+<h3>Web Platform</h3>
 
 ```
 Backend      Laravel (PHP)
@@ -88,7 +88,7 @@ Server       XAMPP
 
 ---
 
-## Academic Objectives
+<h2>Academic Objectives</h2>
 
 This project demonstrates proficiency in:
 
@@ -100,7 +100,7 @@ This project demonstrates proficiency in:
 
 ---
 
-## Contact Information
+<h2>Contact Information</h2>
 
 **Developer**: Dillon Fernandez  
 **Email**: dillonfernandez@gmail.com  
