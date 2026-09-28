@@ -328,6 +328,8 @@ The PHP tests primarily cover starter-kit authentication and settings behavior. 
 
 This repository is best treated as an academic/development project, not a production commerce or payment system.
 
+---
+
 ## Contact Information
 
 **Developer**: Dillon Fernandez<br>
